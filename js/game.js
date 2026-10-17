@@ -856,10 +856,17 @@ function updatePlayer(p, dt, useMouse) {
   const ctrl = p.ctrl;
 
   let mx = 0, my = 0;
-  if (anyKey(ctrl.up)) my -= 1;
-  if (anyKey(ctrl.down)) my += 1;
-  if (anyKey(ctrl.left)) mx -= 1;
-  if (anyKey(ctrl.right)) mx += 1;
+  if (touchMove.active && p.index === 0) {
+    /* виртуальный джойстик — аналоговое движение */
+    mx = touchMove.x;
+    my = touchMove.y;
+    if (Math.abs(mx) < 0.02 && Math.abs(my) < 0.02) { mx = 0; my = 0; }
+  } else {
+    if (anyKey(ctrl.up)) my -= 1;
+    if (anyKey(ctrl.down)) my += 1;
+    if (anyKey(ctrl.left)) mx -= 1;
+    if (anyKey(ctrl.right)) mx += 1;
+  }
   if (mx !== 0 && my !== 0) { mx *= 0.7071; my *= 0.7071; }
 
   if (p.dashCd > 0) p.dashCd -= dt;
@@ -3231,6 +3238,104 @@ function animateMenuPreviews() {
 }
 
 /* =============================================================
+   СЕНСОРНОЕ УПРАВЛЕНИЕ И МАСШТАБ
+   ============================================================= */
+
+const IS_TOUCH = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || /[?&]touch=1/.test(location.search);
+const touchMove = { x: 0, y: 0, active: false };
+let joyTouchId = null, joyOrigin = { x: 0, y: 0 };
+
+function fitCanvas() {
+  if (!canvas) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const scale = Math.min(vw / VIEW_W, vh / VIEW_H);
+  canvas.style.width = Math.round(VIEW_W * scale) + 'px';
+  canvas.style.height = Math.round(VIEW_H * scale) + 'px';
+  /* подсказка о повороте на портретных экранах */
+  const rh = document.getElementById('rotateHint');
+  if (rh) rh.style.display = (IS_TOUCH && vh > vw) ? 'block' : 'none';
+}
+
+function bindTouch() {
+  const ui = document.getElementById('touchUI');
+  if (!ui) return;
+  if (IS_TOUCH) ui.classList.add('on');
+
+  const joy = document.getElementById('joy');
+  const knob = document.getElementById('joyKnob');
+
+  function joyStart(t) {
+    joyTouchId = t.identifier;
+    const r = joy.getBoundingClientRect();
+    joyOrigin = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    joyMove(t);
+  }
+  function joyMove(t) {
+    if (t.identifier !== joyTouchId) return;
+    const dx = t.clientX - joyOrigin.x;
+    const dy = t.clientY - joyOrigin.y;
+    const max = 44;
+    const len = Math.hypot(dx, dy);
+    const cl = len > max ? max / len : 1;
+    const nx = dx * cl, ny = dy * cl;
+    knob.style.transform = 'translate(calc(-50% + ' + Math.round(nx) + 'px), calc(-50% + ' + Math.round(ny) + 'px))';
+    /* мёртвая зона и нормализация */
+    const dead = 8;
+    if (len < dead) { touchMove.x = 0; touchMove.y = 0; touchMove.active = false; return; }
+    touchMove.x = (dx * cl) / max;
+    touchMove.y = (dy * cl) / max;
+    touchMove.active = true;
+  }
+  function joyEnd(t) {
+    if (t.identifier !== joyTouchId) return;
+    joyTouchId = null;
+    touchMove.x = 0; touchMove.y = 0; touchMove.active = false;
+    knob.style.transform = 'translate(-50%, -50%)';
+  }
+
+  joy.addEventListener('touchstart', function (e) {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) joyStart(e.changedTouches[i]);
+  }, { passive: false });
+  joy.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) joyMove(e.changedTouches[i]);
+  }, { passive: false });
+  joy.addEventListener('touchend', function (e) {
+    for (let i = 0; i < e.changedTouches.length; i++) joyEnd(e.changedTouches[i]);
+  });
+  joy.addEventListener('touchcancel', function (e) {
+    for (let i = 0; i < e.changedTouches.length; i++) joyEnd(e.changedTouches[i]);
+  });
+
+  /* кнопки */
+  function hold(id, on, off) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', function (e) { e.preventDefault(); e.stopPropagation(); on(); }, { passive: false });
+    el.addEventListener('touchend', function (e) { e.preventDefault(); if (off) off(); }, { passive: false });
+    el.addEventListener('touchcancel', function () { if (off) off(); });
+    /* мышь — для тестов и десктопа */
+    el.addEventListener('mousedown', function (e) { e.preventDefault(); on(); });
+    el.addEventListener('mouseup', function () { if (off) off(); });
+    el.addEventListener('mouseleave', function () { if (off) off(); });
+  }
+
+  hold('btnAtk', function () { mouse.down = true; }, function () { mouse.down = false; });
+  hold('btnDash', function () { if (player && player.dashCd <= 0 && G.state === 'playing') doDash(player, touchMove.x, touchMove.y); });
+  hold('btnSpec', function () { if (player && player.spCd <= 0 && G.state === 'playing') doSpecial(player); });
+  hold('btnUlt', function () { if (player && player.ult >= player.ultMax && G.state === 'playing') doUltimate(player); });
+
+  /* блокируем скролл/зум на игровом поле */
+  document.addEventListener('touchmove', function (e) {
+    if (e.target && e.target.closest && e.target.closest('#joy, #btns, .tbtn')) return;
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+  document.addEventListener('dblclick', function (e) { e.preventDefault(); });
+}
+
+/* =============================================================
    ВВОД
    ============================================================= */
 
@@ -3459,6 +3564,10 @@ function boot() {
   FX.setWeather(LOC.weather);
   FX.resetAmbient();
   bindInput();
+  bindTouch();
+  fitCanvas();
+  window.addEventListener('resize', fitCanvas);
+  window.addEventListener('orientationchange', function () { setTimeout(fitCanvas, 120); });
   toMenu();
   requestAnimationFrame(loop);
 }

@@ -11,17 +11,18 @@ body {
 .hidden { display: none !important; }
 
 #wrap {
-  position: relative;
-  width: min(100vw, calc(100vh * 16 / 9));
-  aspect-ratio: 16 / 9;
-  box-shadow: 0 0 0 3px #0a0d1a, 0 0 0 7px #262c52, 0 28px 90px rgba(0,0,0,.85);
-  border-radius: 5px;
+  position: fixed; inset: 0;
+  background: #05060f;
   overflow: hidden;
   isolation: isolate;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 canvas#game {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%;
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -116,6 +117,53 @@ canvas#game {
   width: 58px; height: 34px; image-rendering: pixelated;
   border: 2px solid #3a4270; border-radius: 4px;
   background: rgba(6,10,20,.72);
+}
+
+/* ================= СЕНСОРНОЕ УПРАВЛЕНИЕ ================= */
+#touchUI { position: absolute; inset: 0; z-index: 8; pointer-events: none; display: none; }
+#touchUI.on { display: block; }
+
+#joy {
+  position: absolute; left: 4%; bottom: 12%;
+  width: 108px; height: 108px; border-radius: 50%;
+  background: rgba(20,26,48,.4);
+  border: 2px solid rgba(90,110,180,.5);
+  pointer-events: auto; touch-action: none;
+}
+#joyKnob {
+  position: absolute; left: 50%; top: 50%;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(140,170,255,.55);
+  border: 2px solid rgba(200,220,255,.7);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px rgba(120,150,255,.4);
+}
+
+#btns {
+  position: absolute; right: 3%; bottom: 9%;
+  display: grid; grid-template-columns: repeat(2, 58px); gap: 10px;
+  pointer-events: auto;
+}
+.tbtn {
+  width: 58px; height: 58px; border-radius: 50%;
+  background: rgba(20,26,48,.55);
+  border: 2px solid rgba(90,110,180,.55);
+  color: #dfe3ff; font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 3px 0 rgba(0,0,0,.4);
+}
+.tbtn:active { background: rgba(60,80,140,.7); transform: scale(.94); }
+#btnAtk { width: 74px; height: 74px; font-size: 26px; border-color: rgba(255,215,106,.6); background: rgba(60,45,15,.55); }
+#btnUlt { border-color: rgba(240,171,252,.6); }
+#btnSpec { border-color: rgba(103,232,249,.6); }
+#btnDash { border-color: rgba(143,211,255,.6); }
+
+#rotateHint {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%);
+  font-size: 11px; color: #8f97c9; letter-spacing: 2px; text-align: center;
+  background: rgba(6,8,20,.7); padding: 10px 16px; border-radius: 6px;
+  border: 1px solid #2a3157; display: none; z-index: 9;
 }
 #fps {
   position: absolute; right: 72px; bottom: 12px;
