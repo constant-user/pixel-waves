@@ -710,6 +710,9 @@ function startGame(opts) {
   G.killsThisWave = 0;
   G.elapsed = 0;
   G.hintT = 11;
+  G.endless = false;      /* новый забег всегда начинается с 1-й волны */
+  G.rerolls = 0;
+  G.totalDmg = 0;
 
   enemies = []; projs = []; eprojs = []; items = []; flyers = [];
   hazards = []; timers = [];
@@ -767,9 +770,15 @@ function toMenu() {
   els.hud.classList.add('hidden');
   hideBanner();
   buildCharCards();
+  buildChar2Cards();
   buildLocCards();
   buildDiffCards();
   updateMenuMeta();
+  /* синхронизируем переключатель режима с текущим значением */
+  els.mode1.classList.toggle('sel', !twoPlayer);
+  els.mode2.classList.toggle('sel', !!twoPlayer);
+  els.p2section.classList.toggle('hidden', !twoPlayer);
+  syncSettingButtons();
   Sfx.setMood('menu');
 }
 
@@ -994,7 +1003,24 @@ function doSpecial(p) {
     for (let i = 0; i < 5; i++) {
       FX.spawn(p.x, p.y, 1, { color: '#a78bfa', speed: 40, life: 0.3, light: 0.6 });
     }
-    p.x = tx; p.y = ty;
+    /* телепорт только в свободную точку — иначе можно застрять в стене/воде */
+    let dx = tx, dy = ty;
+    if (solidAt(dx, dy) || boxBlocked(dx, dy, p.r)) {
+      let found = false;
+      for (let k = 1; k <= 16 && !found; k++) {
+        for (let s = 0; s < 8; s++) {
+          const a2 = (s / 8) * Math.PI * 2;
+          const nx = near.x + Math.cos(a2) * k * 10;
+          const ny = near.y + Math.sin(a2) * k * 10;
+          if (nx < TILE || ny < TILE || nx > WORLD_W - TILE || ny > WORLD_H - TILE) continue;
+          if (solidAt(nx, ny) || boxBlocked(nx, ny, p.r)) continue;
+          dx = nx; dy = ny; found = true; break;
+        }
+      }
+      if (!found) { dx = p.x; dy = p.y; }
+    }
+    p.x = clamp(dx, TILE, WORLD_W - TILE);
+    p.y = clamp(dy, TILE, WORLD_H - TILE);
     p.iframes = Math.max(p.iframes, 0.3);
     FX.ring(p.x, p.y, '#a78bfa', 4, 34, 0.3, 3);
     FX.spawn(p.x, p.y, 20, { color: '#c4b5fd', speed: 130, life: 0.4, light: 0.7 });
@@ -1056,11 +1082,12 @@ function doSpecial(p) {
     p.iframes = Math.max(p.iframes, 0.3);
     FX.shake(5);
   } else if (p.charKey === 'reaper') {
-    /* СБОР УРОЖАЯ: спираль душ, лечит за убийства */
+    /* СБОР УРОЖАЯ: спираль душ, лечит за каждое попадание */
     for (let i = 0; i < 8; i++) {
-      flyers.push({ a: (i / 8) * Math.PI * 2, r: 30, spin: 1.6, dmg: dmg * 0.5, t: 2.4, hit: {}, owner: p, heal: 6 });
+      flyers.push({ a: (i / 8) * Math.PI * 2, r: 30, spin: 1.6, dmg: dmg * 0.5, t: 2.4, hit: {}, owner: p, heal: 8 });
     }
     FX.ring(p.x, p.y, '#22d3ee', 8, 70, 0.45, 3);
+    FX.text(p.x, p.y - 24, 'СБОР УРОЖАЯ', '#22d3ee', 9);
     Sfx.levelUp();
   } else if (p.charKey === 'pyromant') {
     /* ОГНЕННАЯ СТЕНА: линия взрывов */
@@ -1080,7 +1107,10 @@ function doSpecial(p) {
 
 /* простой отложенный вызов без внешних зависимостей */
 let timers = [];
-function setTimeoutSafe(fn, ms) { timers.push({ fn: fn, t: ms / 1000 }); }
+function setTimeoutSafe(fn, ms) {
+  if (timers.length > 24) timers.shift();
+  timers.push({ fn: fn, t: ms / 1000 });
+}
 function runTimers(dt) {
   for (let i = timers.length - 1; i >= 0; i--) {
     timers[i].t -= dt;
@@ -1383,6 +1413,7 @@ function updateEnemy(e, dt) {
     else if (d > rg.max) sp *= 1.05;
     else sp *= 0.15;
 
+    if (e.castT > 0) e.castT -= dt;
     if (e.shootCd <= 0 && d < rg.max + 50 && lineOfSight(e.x, e.y, t.x, t.y)) {
       e.shootCd = rg.cd * rnd(0.85, 1.2);
       /* короткая замах-вспышка перед выстрелом */
@@ -1390,17 +1421,26 @@ function updateEnemy(e, dt) {
       e.castA = Math.atan2(dy, dx);
       Sfx.enemyShoot();
     }
-    if (e.castT > 0) {
-      e.castT -= dt;
-      if (e.castT <= 0) {
-        const a = (e.castA || 0) + rnd(-0.06, 0.06);
-        enemyShoot(e, rg.sprite, a, rg.speed, e.dmg * rg.dmg, rg.spin);
-        FX.spawn(e.x + Math.cos(a) * 8, e.y - 4, 2, { color: '#ffd7a8', speed: 40, life: 0.14, ang: a, spread: 0.7, light: 0.4 });
-      }
+    if (e.castT > 0 && e.castT - dt <= 0) {
+      const a = (e.castA || 0) + rnd(-0.06, 0.06);
+      enemyShoot(e, rg.sprite, a, rg.speed, e.dmg * rg.dmg, rg.spin);
+      FX.spawn(e.x + Math.cos(a) * 8, e.y - 4, 2, { color: '#ffd7a8', speed: 40, life: 0.14, ang: a, spread: 0.7, light: 0.4 });
     }
   }
 
-  if (e.def.suicide && d < 22) { killEnemy(e, t); return; }
+  if (e.def.suicide && d < 22) {
+    /* камикадзе действительно взрывается, а не просто исчезает */
+    FX.ring(e.x, e.y, '#f97316', 3, 44, 0.35, 3);
+    FX.spawn(e.x, e.y, 18, { color: '#fb923c', speed: 120, life: 0.45, g: 40, light: 0.8 });
+    FX.decal(e.x, e.y, '#2a1810', 6, 5);
+    FX.shake(4);
+    FX.flash(0.18, '#fb923c');
+    Sfx.explode();
+    hitAllInRange(t, 42, 40 * curseDmgMult(), 8);
+    damagePlayer(t, 18);
+    killEnemy(e, t);
+    return;
+  }
 
   if (e.flying) {
     e.x = clamp(e.x + dirX * sp * dt, e.r, WORLD_W - e.r);
@@ -2071,6 +2111,10 @@ function updateFlyers(dt) {
       if (Math.hypot(x - e.x, y - e.y) < e.r + 4) {
         f.hit[e.id] = true;
         hitEnemy(f.owner, e, f.dmg, f.a, 2, true);
+        /* «Сбор урожая» и ультимейт Жнеца лечат за каждое попадание */
+        if (f.heal && f.owner.hp < f.owner.maxHp) {
+          f.owner.hp = Math.min(f.owner.maxHp, f.owner.hp + f.heal);
+        }
       }
     }
   }
@@ -2185,6 +2229,7 @@ function startWave(n) {
 
 function endWave() {
   if (!G.endless && G.wave >= MAX_WAVE) { winGame(); return; }
+  G.curse = null;          /* проклятие не тянется на передышку */
 
   G.waveState = 'break';
   G.breakTimer = 3.4;
@@ -2625,10 +2670,14 @@ function drawWaterAnim() {
   }
 }
 
-function drawDecor(canopy) {
+const TALL_DECOR = { mushroom: 1, mushroomLit: 1, flower: 1, stump: 1, column: 1, brazier: 1, emberrock: 1, rubble: 1 };
+
+function drawDecor(over) {
   const t = G.time;
   for (let i = 0; i < decor.length; i++) {
     const d = decor[i];
+    const tall = !!TALL_DECOR[d.kind];
+    if (!!over !== tall) continue;           /* низкое — под сущностями, высокое — над ними */
     if (d.x < cam.x - 24 || d.x > cam.x + VIEW_W + 24 || d.y < cam.y - 24 || d.y > cam.y + VIEW_H + 24) continue;
     const sp = Sprites[d.kind];
     if (!sp) continue;
