@@ -128,11 +128,8 @@ const LOCATIONS = {
 const LOC_ORDER = ['forest', 'swamp', 'ruins', 'caldera'];
 let LOC = LOCATIONS.forest;
 
-function locUnlocked(key) {
-  const l = LOCATIONS[key];
-  if (!l.need) return true;
-  return (SAVE.bestWave || 0) >= l.need;
-}
+/* все локации и герои доступны сразу */
+function locUnlocked() { return true; }
 
 /* =============================================================
    ГЕРОИ
@@ -198,7 +195,6 @@ const CHARACTERS = {
 };
 
 const HERO_ORDER = ['knight', 'archer', 'rogue', 'barbarian', 'gunner', 'spearman', 'reaper', 'pyromant'];
-const HERO_NEED = { reaper: 30, pyromant: 20 };
 
 /* =============================================================
    ВРАГИ
@@ -263,8 +259,16 @@ const BOSS_ORDER = [
 
 function bossForWave(n) {
   for (let i = 0; i < BOSS_ORDER.length; i++) if (BOSS_ORDER[i].wave === n) return BOSS_ORDER[i].key;
+  /* бесконечный режим: после 30-й волны босс каждые 5 волн */
+  if (G.endless && n > MAX_WAVE && n % 5 === 0) {
+    const cycle = ['huskreign', 'skking', 'dragon', 'spiderqueen', 'golem'];
+    return cycle[(Math.floor(n / 5) - 6) % cycle.length];
+  }
   return null;
 }
+
+/* последняя волна забега (в бесконечном режиме потолка нет) */
+function maxWave() { return G.endless ? Infinity : MAX_WAVE; }
 
 /* =============================================================
    УЛУЧШЕНИЯ
@@ -293,7 +297,17 @@ const UPGRADES = [
   { id: 'laststand', tier: 3, name: 'ПОСЛЕДНИЙ ВСПЛЕСК', icon: '✚', color: '#ffe27a', desc: 'Раз в волну смертельный удар оставляет 1 HP', max: 1, apply: function (p) { p.st.lastStandMax = 1; p.st.lastStand = 1; } },
   { id: 'quake', tier: 3, name: 'ЗЕМЛЕТРЯСЕНИЕ', icon: '☄', color: '#ff9f43', desc: 'Каждое убийство бьёт всех вокруг', max: 3, apply: function (p) { p.st.quake += 28; } },
   { id: 'thorns', tier: 3, name: 'ШИПЫ', icon: '✳', color: '#a3e635', desc: 'Враги рядом получают урон', max: 3, apply: function (p) { p.st.thorns += 18; } },
-  { id: 'magnet', tier: 3, name: 'МАГНЕТИЗМ', icon: '⊕', color: '#67e8f9', desc: 'Радиус подбора x2.2 и +12% урона', apply: function (p) { p.st.magnet = 1; p.st.dmg *= 1.12; } }
+  { id: 'magnet', tier: 3, name: 'МАГНЕТИЗМ', icon: '⊕', color: '#67e8f9', desc: 'Радиус подбора x2.2 и +12% урона', apply: function (p) { p.st.magnet = 1; p.st.dmg *= 1.12; } },
+
+  /* --- уникальные для героев --- */
+  { id: 'k_guard', tier: 2, hero: 'knight', name: 'СТЕНА ЩИТА', icon: '🛡', color: '#93c5fd', desc: 'Щит восстанавливается вдвое быстрее', max: 3, apply: function (p) { p.st.shieldRegen = Math.max(2, p.st.shieldRegen - 2.5); p.st.shieldMax += 1; p.st.shield = p.st.shieldMax; } },
+  { id: 'a_eye', tier: 2, hero: 'archer', name: 'ОРЛИНЫЙ ГЛАЗ', icon: '👁', color: '#a3e635', desc: '+25% скорости снарядов и +4 к пробитию', max: 3, apply: function (p) { p.st.projSpeed *= 1.25; p.st.pierce += 4; } },
+  { id: 'r_dance', tier: 2, hero: 'rogue', name: 'ТАНЕЦ КЛЫКОВ', icon: '❖', color: '#c084fc', desc: '+40% перезарядки и −25% перезарядки рывка', max: 3, apply: function (p) { p.st.cd *= 0.6; p.st.dashCd *= 0.75; } },
+  { id: 'b_rage', tier: 2, hero: 'barbarian', name: 'ЯРОСТЬ ТОПОРА', icon: '🪓', color: '#f97316', desc: '+20% урона, +2 к ширине конуса', max: 3, apply: function (p) { p.st.dmg *= 1.2; p.st.arcMul *= 1.3; } },
+  { id: 'g_rapid', tier: 2, hero: 'gunner', name: 'СКОРОСТРЕЛЬНОСТЬ', icon: '⚡', color: '#60a5fa', desc: '−35% перезарядки, +2 пробития', max: 3, apply: function (p) { p.st.cd *= 0.65; p.st.pierce += 2; } },
+  { id: 's_reach', tier: 2, hero: 'spearman', name: 'ДЛИННЫЙ УКОЛ', icon: '➹', color: '#5eead4', desc: '+8 к радиусу и +15% урона', max: 3, apply: function (p) { p.st.range += 8; p.st.dmg *= 1.15; } },
+  { id: 'rp_harvest', tier: 2, hero: 'reaper', name: 'ЖНАТВА ДУШ', icon: '☠', color: '#22d3ee', desc: '+6% вампиризма, +2 к урону', max: 3, apply: function (p) { p.st.lifesteal += 0.06; p.st.dmg *= 1.2; } },
+  { id: 'py_fire', tier: 2, hero: 'pyromant', name: 'ЗАЖИГАТЕЛЬ', icon: '🔥', color: '#fb923c', desc: 'Взрывы шире и поджигают врагов', max: 3, apply: function (p) { p.st.splash = (p.st.splash || 34) + 12; p.st.burn = (p.st.burn || 0) + 6; } }
 ];
 
 const SHOP_ITEMS = [
@@ -355,9 +369,7 @@ function persist() {
   try { window.localStorage.setItem(SAVE_KEY, JSON.stringify(SAVE)); } catch (e) { /* приватный режим */ }
 }
 
-function heroUnlocked(key) {
-  return HERO_NEED[key] ? (SAVE.bestWave || 0) >= HERO_NEED[key] : true;
-}
+function heroUnlocked() { return true; }
 
 /* =============================================================
    СОСТОЯНИЕ
@@ -412,7 +424,11 @@ const G = {
   comboT: 0,
   bestCombo: 0,
   killsThisWave: 0,
-  elapsed: 0
+  elapsed: 0,
+  endless: false,
+  rerolls: 0,
+  fxOn: true,
+  showFps: false
 };
 
 function diff() { return DIFFICULTIES[G.difficulty] || DIFFICULTIES.normal; }
@@ -750,6 +766,7 @@ function togglePause() {
   if (G.state === 'playing') {
     G.state = 'paused';
     mouse.down = false;
+    syncSettingButtons();
     els.pause.classList.remove('hidden');
   } else if (G.state === 'paused') {
     G.state = 'playing';
@@ -793,12 +810,6 @@ function finishRun(won) {
   SAVE.bestScore = Math.max(SAVE.bestScore || 0, G.score);
   SAVE.runs = (SAVE.runs || 0) + 1;
   SAVE.totalCoins = (SAVE.totalCoins || 0) + G.coins;
-  if (won) { SAVE.unlocked.reaper = 1; SAVE.unlocked.pyromant = 1; }
-  else {
-    HERO_ORDER.forEach(function (k) {
-      if (HERO_NEED[k] && (SAVE.bestWave || 0) >= HERO_NEED[k]) SAVE.unlocked[k] = 1;
-    });
-  }
   persist();
 
   const ps = activePlayers();
@@ -1056,9 +1067,11 @@ function spawnEnemy(type, x, y, opts) {
 
   const wave = Math.max(1, G.wave);
   const d = diff();
-  const hpScale = (def.boss ? 1 : 1 + (wave - 1) * 0.13) * d.enemyHp * LOC.enemyHp * (opts.hpMul || 1);
-  const dmgScale = (1 + (wave - 1) * 0.05) * d.enemyDmg * LOC.enemyDmg;
-  const spdScale = (1 + Math.min(0.5, (wave - 1) * 0.016)) * (G.curse && G.curse.speed ? G.curse.speed : 1);
+  /* мягкое насыщение роста, чтобы бесконечный режим оставался честным */
+  const grow = Math.pow(wave - 1, 1.12) * 0.13;
+  const hpScale = (def.boss ? 1 + (wave - 1) * 0.035 : 1 + grow) * d.enemyHp * LOC.enemyHp * (opts.hpMul || 1);
+  const dmgScale = (1 + Math.pow(wave - 1, 1.08) * 0.045) * d.enemyDmg * LOC.enemyDmg;
+  const spdScale = (1 + Math.min(0.55, (wave - 1) * 0.012)) * (G.curse && G.curse.speed ? G.curse.speed : 1);
 
   let px = x, py = y;
   if (px === undefined) { const s = findSpawnPoint(); px = s.x; py = s.y; }
@@ -1073,6 +1086,7 @@ function spawnEnemy(type, x, y, opts) {
     dmg: def.dmg * dmgScale * (elite ? elite.dmg : 1),
     speed: def.speed * spdScale * (elite ? elite.spd : 1),
     hitCd: 0, hurt: 0, shootCd: rnd(0.7, 2), thornCd: 0,
+    aimT: 0, cdirX: 0, cdirY: 0, castT: 0, castA: 0, stuckT: 0, detourT: 0,
     t: 0, phase: Math.random() * 10, facing: 1,
     flying: !!def.flying, hover: def.hover || 0, dead: false,
     elite: elite, dr: elite ? (elite.dr || 0) : 0,
@@ -1146,6 +1160,7 @@ function updateEnemy(e, dt) {
   if (e.hurt > 0) e.hurt -= dt;
   if (e.shootCd > 0) e.shootCd -= dt;
   if (e.thornCd > 0) e.thornCd -= dt;
+  if (e.aimT > 0) e.aimT -= dt;
 
   const t = nearestPlayer(e.x, e.y);
   const dx = t.x - e.x, dy = t.y - e.y;
@@ -1166,13 +1181,20 @@ function updateEnemy(e, dt) {
       sp *= 2.6;
       dirX = e.cdirX; dirY = e.cdirY;
       if (Math.random() < 0.4) FX.dust(e.x, e.y, LOC.pal.gL, 1);
+    } else if (e.aimT > 0) {
+      /* телеграф: подсветка перед рывком — игрок успевает уйти */
+      e.aimT -= dt;
+      e.cdirX = dirX; e.cdirY = dirY;
+      sp *= 0.25;
     } else {
       e.special -= dt;
       if (e.special <= 0 && d < 200) {
         e.special = rnd(3.4, 5.5);
+        e.aimT = 0.55;
         e.chargeT = 0.85;
         e.cdirX = dirX; e.cdirY = dirY;
         FX.dust(e.x, e.y, LOC.pal.gL, 6);
+        Sfx.enemyShoot();
       }
     }
   }
@@ -1190,10 +1212,18 @@ function updateEnemy(e, dt) {
 
     if (e.shootCd <= 0 && d < rg.max + 50 && lineOfSight(e.x, e.y, t.x, t.y)) {
       e.shootCd = rg.cd * rnd(0.85, 1.2);
-      const a = Math.atan2(dy, dx) + rnd(-0.06, 0.06);
-      enemyShoot(e, rg.sprite, a, rg.speed, e.dmg * rg.dmg, rg.spin);
+      /* короткая замах-вспышка перед выстрелом */
+      e.castT = 0.22;
+      e.castA = Math.atan2(dy, dx);
       Sfx.enemyShoot();
-      FX.spawn(e.x + Math.cos(a) * 8, e.y - 4, 2, { color: '#ffd7a8', speed: 40, life: 0.14, ang: a, spread: 0.7, light: 0.4 });
+    }
+    if (e.castT > 0) {
+      e.castT -= dt;
+      if (e.castT <= 0) {
+        const a = (e.castA || 0) + rnd(-0.06, 0.06);
+        enemyShoot(e, rg.sprite, a, rg.speed, e.dmg * rg.dmg, rg.spin);
+        FX.spawn(e.x + Math.cos(a) * 8, e.y - 4, 2, { color: '#ffd7a8', speed: 40, life: 0.14, ang: a, spread: 0.7, light: 0.4 });
+      }
     }
   }
 
@@ -1746,11 +1776,15 @@ function explode(p) {
   FX.decal(p.x, p.y, '#3a2418', 6, 6);
   FX.shake(3);
   Sfx.explode();
+  const burn = (owner && owner.st.burn) || 0;
   const list = enemies.slice();
   for (let i = 0; i < list.length; i++) {
     const e = list[i];
     if (e.dead) continue;
-    if (Math.hypot(e.x - p.x, e.y - p.y) < rad) hitEnemy(owner, e, p.dmg * 1.4, Math.atan2(e.y - p.y, e.x - p.x), 6, true);
+    if (Math.hypot(e.x - p.x, e.y - p.y) < rad) {
+      hitEnemy(owner, e, p.dmg * 1.4, Math.atan2(e.y - p.y, e.x - p.x), 6, true);
+      if (burn > 0 && !e.burnT) { e.burnT = 3.5; e.burnDmg = burn; }
+    }
   }
 }
 
@@ -1803,6 +1837,27 @@ function updateFlyers(dt) {
    ВОЛНЫ
    ============================================================= */
 
+function startEndless() {
+  els.end.classList.add('hidden');
+  els.upgrade.classList.add('hidden');
+  els.shop.classList.add('hidden');
+  G.endless = true;
+  G.waveState = 'break';
+  G.breakTimer = 2;
+  G.spawnQueue = [];
+  G.curse = null;
+  const ps = activePlayers();
+  for (let i = 0; i < ps.length; i++) {
+    ps[i].hp = ps[i].maxHp;
+    ps[i].st.dmg *= 1.1;
+  }
+  banner('БЕСКОНЕЧНЫЙ РЕЖИМ · ВОЛНА ' + (MAX_WAVE + 1) + ' И ДАЛЬШЕ', 3);
+  Sfx.ultimate();
+  Sfx.setMood('boss');
+  G.state = 'playing';
+  lastTs = 0;
+}
+
 function applyEra(wave) {
   const e = ERAS.find(function (x) { return wave <= x.upto; }) || ERAS[ERAS.length - 1];
   FX.setAmbient(Math.min(0.85, Math.max(LOC.amb, e.ambient)));
@@ -1847,16 +1902,23 @@ function updateWaves(dt) {
 
   /* страховка от softlock: слишком долгая волна — стягиваем врагов к игроку */
   G.waveT = (G.waveT || 0) + dt;
-  if (G.waveT > 25 && enemies.length <= 6) {
+  if (G.waveT > 18 && enemies.length <= 8) {
     G.waveT = 0;
     for (let i = 0; i < enemies.length; i++) {
       const e = enemies[i];
       if (e.isBoss) continue;
-      const a = rnd(0, Math.PI * 2);
       const t = nearestPlayer(e.x, e.y);
-      const x = clamp(t.x + Math.cos(a) * 110, TILE, WORLD_W - TILE);
-      const y = clamp(t.y + Math.sin(a) * 110, TILE, WORLD_H - TILE);
-      if (!solidAt(x, y)) { e.x = x; e.y = y; FX.dust(x, y, LOC.pal.gL, 5); }
+      /* ищем свободную точку рядом с игроком, а не наугад */
+      for (let k = 0; k < 14; k++) {
+        const a = rnd(0, Math.PI * 2);
+        const d = 70 + k * 12;
+        const x = clamp(t.x + Math.cos(a) * d, TILE, WORLD_W - TILE);
+        const y = clamp(t.y + Math.sin(a) * d, TILE, WORLD_H - TILE);
+        if (solidAt(x, y) || boxBlocked(x, y, e.r)) continue;
+        e.x = x; e.y = y; e.stuckT = 0; e.detourT = 0;
+        FX.dust(x, y, LOC.pal.gL, 5);
+        break;
+      }
     }
   }
 }
@@ -1879,7 +1941,7 @@ function startWave(n) {
 }
 
 function endWave() {
-  if (G.wave >= MAX_WAVE) { winGame(); return; }
+  if (!G.endless && G.wave >= MAX_WAVE) { winGame(); return; }
 
   G.waveState = 'break';
   G.breakTimer = 3.4;
@@ -1953,6 +2015,7 @@ function openUpgrades(tier) {
   if (!player) return;
   G.state = 'upgrade';
   mouse.down = false;
+  G.rerolls = (tier === 3) ? 0 : 1;
   G.upChoices = pickUpgrades(tier);
   renderUpgradeCards(tier);
   els.upgrade.classList.remove('hidden');
@@ -1970,6 +2033,12 @@ function pickUpgrades(tier) {
 
   let pool = UPGRADES.filter(function (u) { return tier === 3 ? u.tier === 3 : u.tier <= 2; });
   pool = pool.filter(function (u) {
+    if (u.hero) {
+      /* уникальные показываем только если такой герой в игре */
+      let has = false;
+      for (let i = 0; i < ps.length; i++) if (ps[i].charKey === u.hero) has = true;
+      return has;
+    }
     if (u.only === 'melee') return anyMelee;
     if (u.only === 'ranged') return anyRanged;
     return true;
@@ -1998,9 +2067,21 @@ function pickUpgrades(tier) {
   return out;
 }
 
+function rerollUpgrades() {
+  if (G.state !== 'upgrade' || !G.rerolls) return;
+  G.rerolls--;
+  G.upChoices = pickUpgrades(G.upTier || 1);
+  renderUpgradeCards(G.upTier || 1);
+  Sfx.ui();
+  updateHud();
+}
+
 function renderUpgradeCards(tier) {
+  G.upTier = tier;
   els.upgradeTitle.textContent = tier === 3 ? 'НАГРАДА ЗА БОССА' : 'ВЫБЕРИ УЛУЧШЕНИЕ';
-  els.upgradeSub.textContent = twoPlayer ? 'Улучшение получают оба героя' : 'Кликни по карточке или нажми 1 / 2 / 3';
+  els.upgradeSub.textContent = twoPlayer
+    ? 'Улучшение получают оба героя · реролл: ' + G.rerolls
+    : 'Кликни по карточке или нажми 1 / 2 / 3 · реролл: ' + G.rerolls;
   els.upgradeList.innerHTML = '';
   G.upChoices.forEach(function (u, i) {
     const card = document.createElement('div');
@@ -2142,6 +2223,8 @@ function update(dt) {
   updateCamera(dt);
   collectLights();
   Sfx.tick(dt);
+  miniAcc += dt;
+  if (miniAcc > 0.1) { miniAcc = 0; drawMinimap(); }
   updateHud();
 }
 
@@ -2360,13 +2443,9 @@ function drawHero(p) {
 
   drawShadow(p.x, p.y, 9);
 
-  if (p.iframes > 0 && Math.floor(G.time * 20) % 2 === 0) return;
-
   const sp = frameOf(c.sprite, t, mode);
-  const hit = p.iframes > 0;
-  if (hit) {
-    ctx.globalAlpha = 0.55;
-  }
+  const inv = p.iframes > 0;
+  if (inv) ctx.globalAlpha = (Math.floor(G.time * 20) % 2 === 0) ? 0.45 : 0.75;
   const pos = drawSpriteAt(sp, p.x, p.y + 3, Math.cos(p.aim) < 0, 0);
 
   /* оружие в стороне прицела */
@@ -2384,12 +2463,6 @@ function drawHero(p) {
   }
 
   ctx.globalAlpha = 1;
-  if (hit) {
-    const w = whiteVersion(sp);
-    ctx.globalAlpha = 0.5;
-    drawSpriteAt(w, p.x, p.y + 3, Math.cos(p.aim) < 0, 0);
-    ctx.globalAlpha = 1;
-  }
 
   /* эффекты состояния */
   if (p.dashT > 0) {
@@ -2437,6 +2510,24 @@ function drawEnemy(e) {
     ctx.beginPath();
     ctx.ellipse(e.x, e.y + 2, e.r + 3, (e.r + 3) * 0.5, 0, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  /* телеграф: рывок (красная стрелка) и замах выстрела (вспышка) */
+  if (e.aimT > 0) {
+    const k = 1 - e.aimT / 0.55;
+    ctx.globalAlpha = 0.35 + k * 0.5;
+    ctx.strokeStyle = '#ff5470';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(e.x, e.y - 2);
+    ctx.lineTo(e.x + (e.cdirX || 0) * 26, e.y - 2 + (e.cdirY || 0) * 26);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else if (e.castT > 0) {
+    ctx.globalAlpha = 0.5 + Math.sin(G.time * 40) * 0.3;
+    ctx.fillStyle = '#ffe27a';
+    ctx.fillRect(Math.round(e.x - 1), Math.round(e.y - e.r - 4), 2, 2);
     ctx.globalAlpha = 1;
   }
   if (e.rage) {
@@ -2524,6 +2615,63 @@ function drawPortrait(i) {
   g.clearRect(0, 0, 16, 16);
   const sp = Sprites[CHARACTERS[p.charKey].sprite];
   if (sp) g.drawImage(sp, 0, 0);
+}
+
+/* ---------------- Миникарта ---------------- */
+
+let miniCv = null, miniG = null, miniAcc = 0;
+
+function drawMinimap() {
+  if (!miniCv) {
+    if (!els.minimap) return;
+    miniCv = els.minimap;
+    miniG = miniCv.getContext('2d');
+  }
+  if (!miniG) return;
+  const W = miniCv.width, H = miniCv.height;
+  const sx = W / WORLD_W, sy = H / WORLD_H;
+
+  miniG.clearRect(0, 0, W, H);
+  miniG.fillStyle = 'rgba(6,10,20,0.72)';
+  miniG.fillRect(0, 0, W, H);
+
+  /* тайлы-препятствия */
+  miniG.fillStyle = 'rgba(70,96,130,0.55)';
+  const step = 2;
+  for (let ty = 0; ty < MAP_H; ty += step) {
+    for (let tx = 0; tx < MAP_W; tx += step) {
+      const t = tiles[ty][tx];
+      if (t === T_TREE || t === T_ROCK) miniG.fillRect(tx * TILE * sx, ty * TILE * sy, TILE * step * sx, TILE * step * sy);
+      else if (t === T_WATER) {
+        miniG.fillStyle = 'rgba(30,80,140,0.5)';
+        miniG.fillRect(tx * TILE * sx, ty * TILE * sy, TILE * step * sx, TILE * step * sy);
+        miniG.fillStyle = 'rgba(70,96,130,0.55)';
+      }
+    }
+  }
+
+  /* враги */
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    miniG.fillStyle = e.isBoss ? '#ff5470' : (e.elite ? '#ffd76a' : '#ff8a8a');
+    const s = e.isBoss ? 2.5 : 1.2;
+    miniG.fillRect(e.x * sx - s / 2, e.y * sy - s / 2, s, s);
+  }
+  /* лут */
+  for (let i = 0; i < items.length; i++) {
+    miniG.fillStyle = items[i].kind === 'heart' ? '#7dffa8' : '#67e8f9';
+    miniG.fillRect(items[i].x * sx, items[i].y * sy, 1, 1);
+  }
+  /* герои */
+  const ps = activePlayers();
+  for (let i = 0; i < ps.length; i++) {
+    if (!ps[i]) continue;
+    miniG.fillStyle = i === 0 ? '#ffffff' : '#f0abfc';
+    miniG.fillRect(ps[i].x * sx - 1, ps[i].y * sy - 1, 2.5, 2.5);
+  }
+  /* рамка обзора камеры */
+  miniG.strokeStyle = 'rgba(255,255,255,0.25)';
+  miniG.strokeRect(cam.x * sx, cam.y * sy, VIEW_W * sx, VIEW_H * sy);
 }
 
 function updateHud() {
@@ -2614,12 +2762,12 @@ function buildCharCards() {
 
     const rl = document.createElement('div');
     rl.className = 'char-role';
-    rl.textContent = unlocked ? c.role : '🔒 до волны ' + HERO_NEED[key];
+    rl.textContent = c.role;
     card.appendChild(rl);
 
     const ds = document.createElement('div');
     ds.className = 'char-desc';
-    ds.textContent = unlocked ? c.desc : 'Открой прохождением';
+    ds.textContent = c.desc + ' · ' + c.ultName;
     card.appendChild(ds);
 
     const bars = document.createElement('div');
@@ -2693,7 +2841,7 @@ function buildLocCards() {
     card.innerHTML =
       '<div class="loc-icon">' + l.icon + '</div>' +
       '<div class="loc-name">' + l.name + '</div>' +
-      '<div class="loc-desc">' + (unlocked ? l.desc : '🔒 рекорд: волна ' + l.need) + '</div>' +
+      '<div class="loc-desc">' + l.desc + '</div>' +
       '<div class="loc-mods">' +
       '<span class="mod hp">HP врагов ×' + l.enemyHp + '</span>' +
       '<span class="mod dm">урон ×' + l.enemyDmg + '</span>' +
@@ -2785,6 +2933,7 @@ function bindInput() {
       if (e.code === 'Digit1') chooseUpgrade(0);
       if (e.code === 'Digit2') chooseUpgrade(1);
       if (e.code === 'Digit3') chooseUpgrade(2);
+      if (e.code === 'KeyR') rerollUpgrades();
     }
     if (G.state === 'shop' && e.code === 'Space') { e.preventDefault(); closeShop(); }
   });
@@ -2858,6 +3007,41 @@ function bindInput() {
     const on = Sfx.toggleMusic();
     els.musicBtn.textContent = 'Музыка: ' + (on ? 'вкл' : 'выкл');
   });
+
+  els.rerollBtn.addEventListener('click', function () { els.rerollBtn.blur(); rerollUpgrades(); });
+
+  els.endlessBtn.addEventListener('click', function () { els.endlessBtn.blur(); startEndless(); });
+  els.endMenuBtn.addEventListener('click', function () { els.endMenuBtn.blur(); toMenu(); });
+
+  els.pSfxBtn.addEventListener('click', function () {
+    const on = Sfx.toggle();
+    els.pSfxBtn.textContent = 'Звук: ' + (on ? 'вкл' : 'выкл');
+    Sfx.ui();
+  });
+  els.pMusicBtn.addEventListener('click', function () {
+    const on = Sfx.toggleMusic();
+    els.pMusicBtn.textContent = 'Музыка: ' + (on ? 'вкл' : 'выкл');
+  });
+  els.pFxBtn.addEventListener('click', function () {
+    G.fxOn = !G.fxOn;
+    FX.setBloom(!!G.fxOn);
+    els.pFxBtn.textContent = 'Эффекты: ' + (G.fxOn ? 'вкл' : 'выкл');
+  });
+  els.pFpsBtn.addEventListener('click', function () {
+    G.showFps = !G.showFps;
+    els.fps.classList.toggle('hidden', !G.showFps);
+    els.pFpsBtn.textContent = 'FPS: ' + (G.showFps ? 'вкл' : 'выкл');
+  });
+
+  syncSettingButtons();
+}
+
+function syncSettingButtons() {
+  if (!els.pSfxBtn) return;
+  els.pSfxBtn.textContent = 'Звук: ' + (Sfx.isEnabled() ? 'вкл' : 'выкл');
+  els.pMusicBtn.textContent = 'Музыка: ' + (Sfx.isMusic() ? 'вкл' : 'выкл');
+  els.pFxBtn.textContent = 'Эффекты: ' + (G.fxOn !== false ? 'вкл' : 'выкл');
+  els.pFpsBtn.textContent = 'FPS: ' + (G.showFps ? 'вкл' : 'выкл');
 }
 
 /* =============================================================
@@ -2873,7 +3057,10 @@ function loop(ts) {
     perfAcc += dt; perfFrames++;
     if (perfAcc >= 1) {
       const avg = perfAcc / perfFrames;
-      if (avg > 0.026 && perfTier === 2) { perfTier = 1; FX.setBloom(false); }
+      if (G.showFps && els.fps) els.fps.textContent = Math.round(1 / avg);
+      if (G.fxOn === false) {
+        FX.setBloom(false);
+      } else if (avg > 0.026 && perfTier === 2) { perfTier = 1; FX.setBloom(false); }
       else if (avg > 0.038 && perfTier >= 1) { perfTier = 0; FX.setMaxLights(16); FX.setAmbient(LOC.amb * 0.8); }
       else if (avg < 0.019 && perfTier < 2) { perfTier = 2; FX.setBloom(true); FX.setMaxLights(46); }
       perfAcc = 0; perfFrames = 0;
@@ -2885,6 +3072,7 @@ function loop(ts) {
   } else if (G.state === 'menu') {
     G.menuTime += dt;
     FX.update(dt);
+    Sfx.tick(dt);
     animateMenuPreviews();
   }
 
@@ -2918,9 +3106,11 @@ function boot() {
     waveText: 'waveText', leftText: 'leftText', scoreText: 'scoreText',
     coinText: 'coinText', timeText: 'timeText',
     bossWrap: 'bossWrap', bossName: 'bossName', bossFill: 'bossFill',
-    curse: 'curse', combo: 'combo',
+    curse: 'curse', combo: 'combo', minimap: 'minimap', fps: 'fps',
     upgradeTitle: 'upgradeTitle', upgradeSub: 'upgradeSub', upgradeList: 'upgradeList',
     endTitle: 'endTitle', endText: 'endText', metaText: 'metaText',
+    rerollBtn: 'rerollBtn', endlessBtn: 'endlessBtn', endMenuBtn: 'endMenuBtn',
+    pSfxBtn: 'pSfxBtn', pMusicBtn: 'pMusicBtn', pFxBtn: 'pFxBtn', pFpsBtn: 'pFpsBtn',
     soundBtn: 'soundBtn', musicBtn: 'musicBtn'
   };
   Object.keys(map).forEach(function (k) {

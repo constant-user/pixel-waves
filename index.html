@@ -54,6 +54,9 @@
       <div class="bar boss"><i id="bossFill"></i></div>
     </div>
 
+    <canvas id="minimap" width="58" height="34"></canvas>
+    <div id="fps" class="hidden">60</div>
+
     <div id="curse" class="hidden"></div>
     <div id="hint">WASD — движение · ЛКМ/Пробел — атака · ЛShift — рывок · Q — ульта · P — пауза · M/N — звук</div>
   </div>
@@ -109,6 +112,7 @@
     <h2 id="upgradeTitle">ВЫБЕРИ УЛУЧШЕНИЕ</h2>
     <div id="upgradeList" class="upcards"></div>
     <p id="upgradeSub" class="sub">Кликни по карточке или нажми 1 / 2 / 3</p>
+    <button id="rerollBtn" class="small">⟳ Обновить варианты (R)</button>
   </div>
 
   <!-- ================= ЛАВКА ================= -->
@@ -123,14 +127,28 @@
   <div id="pauseScreen" class="screen hidden">
     <h2>ПАУЗА</h2>
     <p class="sub">P или Esc — продолжить</p>
-    <button id="menuBtn" class="small">В МЕНЮ</button>
+    <div class="setrow">
+      <button id="pSfxBtn" class="small">Звук</button>
+      <button id="pMusicBtn" class="small">Музыка</button>
+      <button id="pFxBtn" class="small">Эффекты</button>
+      <button id="pFpsBtn" class="small">FPS</button>
+    </div>
+    <div class="setrow">
+      <button id="menuBtn" class="small">В МЕНЮ</button>
+    </div>
   </div>
 
   <!-- ================= ФИНАЛ ================= -->
   <div id="endScreen" class="screen hidden">
     <h2 id="endTitle">ПОРАЖЕНИЕ</h2>
     <p id="endText"></p>
-    <button id="againBtn" class="big">ЕЩЁ РАЗ</button>
+    <div class="setrow">
+      <button id="endlessBtn" class="big">БЕСКОНЕЧНЫЙ РЕЖИМ</button>
+    </div>
+    <div class="setrow">
+      <button id="againBtn" class="big">ЕЩЁ РАЗ</button>
+      <button id="endMenuBtn" class="small">В МЕНЮ</button>
+    </div>
   </div>
 </div>
 
