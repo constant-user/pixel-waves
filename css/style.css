@@ -148,7 +148,7 @@ canvas#game {
   background: radial-gradient(130% 100% at 50% 0%, rgba(10,14,34,.9), rgba(4,5,12,.97));
   overflow: hidden;
 }
-.screen.scroll { justify-content: flex-start; overflow-y: auto; gap: 7px; }
+.screen.scroll { justify-content: flex-start; overflow-y: auto; overflow-x: hidden; gap: 7px; }
 
 .menu-head { position: relative; width: 100%; }
 .screen h1 {
@@ -179,7 +179,7 @@ button.big {
 button.small { font-size: 9px; padding: 6px 14px; }
 button.tiny { font-size: 8px; padding: 4px 8px; border-radius: 3px; }
 
-.panel { width: 100%; max-width: 680px; }
+.panel { width: 100%; max-width: 720px; min-width: 0; }
 .panel-title {
   font-size: 9px; letter-spacing: 3px; color: #6c74a8;
   margin-bottom: 5px; border-bottom: 1px solid #222a4d; padding-bottom: 3px;
@@ -190,12 +190,13 @@ button.tiny { font-size: 8px; padding: 4px 8px; border-radius: 3px; }
 .mode.sel { color: #ffe27a; border-color: #8a6b2f; background: linear-gradient(#3a3560, #201d3a); }
 
 /* ---- карточки героев ---- */
-.chars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.chars.small { grid-template-columns: repeat(8, 1fr); }
+.chars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.chars.small { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 .char-card {
   background: rgba(10,13,30,.82);
   border: 2px solid #2e355f; border-radius: 6px;
   padding: 6px; cursor: pointer; text-align: center;
+  min-width: 0; overflow-wrap: anywhere;
   transition: transform .08s, border-color .12s, background .12s;
 }
 .char-card:hover { transform: translateY(-2px); border-color: #5c68b8; }
@@ -218,11 +219,12 @@ button.tiny { font-size: 8px; padding: 4px 8px; border-radius: 3px; }
 .sbar i b { display: block; height: 100%; border-radius: 2px; }
 
 /* ---- карточки локаций ---- */
-.locs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.locs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .loc-card {
   background: rgba(10,13,30,.82);
   border: 2px solid #2e355f; border-radius: 6px;
   padding: 7px 6px; cursor: pointer; text-align: center;
+  min-width: 0; overflow-wrap: anywhere;
   transition: transform .08s, border-color .12s, background .12s;
 }
 .loc-card:hover { transform: translateY(-2px); border-color: #5c68b8; }
@@ -238,11 +240,12 @@ button.tiny { font-size: 8px; padding: 4px 8px; border-radius: 3px; }
 .mod.co { background: rgba(250,204,21,.16); color: #fde68a; }
 
 /* ---- карточки сложности ---- */
-.diffs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.diffs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .diff-card {
   background: rgba(10,13,30,.82);
   border: 2px solid #2e355f; border-radius: 6px;
   padding: 7px 6px; cursor: pointer; text-align: center;
+  min-width: 0; overflow-wrap: anywhere;
   transition: transform .08s, border-color .12s, background .12s;
 }
 .diff-card:hover { transform: translateY(-2px); border-color: var(--dc); }

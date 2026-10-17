@@ -141,56 +141,64 @@ const CHARACTERS = {
     desc: 'Щит и широкий замах. Держит удар и рубит всё перед собой.',
     sprite: 'knight', overlay: 'w_sword', weapon: 'melee',
     hp: 150, speed: 74, dmg: 38, cd: 0.46, range: 32, arc: 1.1, knock: 5,
-    ultName: 'СОЛНЕЧНЫЙ УДАР', ultColor: '#fbbf24'
+    ultName: 'СОЛНЕЧНЫЙ УДАР', ultColor: '#fbbf24',
+    spName: 'РАСКОЛ', spColor: '#ffd166', spCd: 7, spDmg: 110
   },
   archer: {
     key: 'archer', name: 'ЛУЧОК', role: 'Лук · дальний бой',
     desc: 'Стреляет часто и бегает быстро. Хрупкий, но смертоносный.',
     sprite: 'archer', overlay: 'w_bow', weapon: 'bow',
     hp: 88, speed: 98, dmg: 17, cd: 0.26, projSpeed: 240, pierce: 0, spread: 0.03,
-    proj: 'arrowP', ultName: 'ДОЖДЬ СТРЕЛ', ultColor: '#86efac'
+    proj: 'arrowP', ultName: 'ДОЖДЬ СТРЕЛ', ultColor: '#86efac',
+    spName: 'ВЕЕРНЫЙ ЗАЛП', spColor: '#86efac', spCd: 6, spDmg: 26
   },
   rogue: {
     key: 'rogue', name: 'РАЗБОЙНИК', role: 'Кинжалы · шквал',
     desc: 'Осыпает врагов кинжалами и проскальзывает между ними.',
     sprite: 'rogue', overlay: 'w_dagger', weapon: 'dagger',
     hp: 98, speed: 112, dmg: 11, cd: 0.15, projSpeed: 275, pierce: 0, spread: 0.11,
-    proj: 'daggerShot', ultName: 'ТЕНЕВОЙ ВИХРЬ', ultColor: '#a78bfa'
+    proj: 'daggerShot', ultName: 'ТЕНЕВОЙ ВИХРЬ', ultColor: '#a78bfa',
+    spName: 'ТЕНЕВОЙ РЫНОК', spColor: '#a78bfa', spCd: 5, spDmg: 130
   },
   barbarian: {
     key: 'barbarian', name: 'ВАРВАР', role: 'Топор · тяжёлый удар',
     desc: 'Огромный замах, отбрасывание и очень много здоровья.',
     sprite: 'barbarian', overlay: 'w_axe', weapon: 'melee',
     hp: 195, speed: 66, dmg: 62, cd: 0.78, range: 36, arc: 1.4, knock: 9,
-    ultName: 'ЗЕМЛЕТРЯСЕНИЕ', ultColor: '#f97316'
+    ultName: 'ЗЕМЛЕТРЯСЕНИЕ', ultColor: '#f97316',
+    spName: 'ВИХРЬ ТОПОРА', spColor: '#fb923c', spCd: 8, spDmg: 60
   },
   gunner: {
     key: 'gunner', name: 'АРБАЛЕТЧИК', role: 'Арбалет · пробитие',
     desc: 'Редкие, но чудовищные болты прошивают строй насквозь.',
     sprite: 'gunner', overlay: 'w_crossbow', weapon: 'bolt',
     hp: 112, speed: 80, dmg: 48, cd: 0.86, projSpeed: 290, pierce: 4, spread: 0,
-    proj: 'boltP', ultName: 'СНАЙПЕРСКИЙ ВЫСТРЕЛ', ultColor: '#93c5fd'
+    proj: 'boltP', ultName: 'СНАЙПЕРСКИЙ ВЫСТРЕЛ', ultColor: '#93c5fd',
+    spName: 'РЕЛЬСОТРОН', spColor: '#93c5fd', spCd: 8, spDmg: 190
   },
   spearman: {
     key: 'spearman', name: 'КОПЕЙЩИК', role: 'Копьё · длинный укол',
     desc: 'Точные уколы узким конусом на безопасной дистанции.',
     sprite: 'spearman', overlay: 'w_spear', weapon: 'melee',
     hp: 128, speed: 88, dmg: 34, cd: 0.32, range: 46, arc: 0.42, knock: 4,
-    ultName: 'ПРОНЗАЮЩИЙ ВИХРЬ', ultColor: '#5eead4'
+    ultName: 'ПРОНЗАЮЩИЙ ВИХРЬ', ultColor: '#5eead4',
+    spName: 'ВЫНОС', spColor: '#5eead4', spCd: 6, spDmg: 150
   },
   reaper: {
     key: 'reaper', name: 'ЖНЕЦ', role: 'Коса · вампиризм',
     desc: 'Очень широкие взмахи и сильный вампиризм. Высасывает жизни.',
     sprite: 'reaper', overlay: 'w_scythe', weapon: 'melee',
     hp: 120, speed: 82, dmg: 40, cd: 0.5, range: 38, arc: 1.7, knock: 5,
-    ultName: 'ЖАТВА', ultColor: '#22d3ee', lifestealBase: 0.04
+    ultName: 'ЖАТВА', ultColor: '#22d3ee', lifestealBase: 0.04,
+    spName: 'СБОР УРОЖАЯ', spColor: '#22d3ee', spCd: 9, spDmg: 120
   },
   pyromant: {
     key: 'pyromant', name: 'ПИРОМАНТ', role: 'Бомбы · взрывы',
     desc: 'Бросает бомбы, которые взрываются и поджигают всё вокруг.',
     sprite: 'pyromant', overlay: 'w_bomb', weapon: 'bomb', splash: 34,
     hp: 118, speed: 84, dmg: 26, cd: 0.62, projSpeed: 210, pierce: 0, spread: 0.06,
-    proj: 'bombShot', ultName: 'ОГНЕННЫЙ ЛИВЕНЬ', ultColor: '#fb923c'
+    proj: 'bombShot', ultName: 'ОГНЕННЫЙ ЛИВЕНЬ', ultColor: '#fb923c', splash: 34,
+    spName: 'ОГНЕННАЯ СТЕНА', spColor: '#fb923c', spCd: 8, spDmg: 70
   }
 };
 
@@ -392,6 +400,7 @@ let flyers = [];
 let tiles = [];
 let decor = [];
 let torches = [];
+let hazards = [];
 let worldCv = null;
 let enemySeq = 1;
 let els = {};
@@ -643,8 +652,8 @@ function lineOfSight(x0, y0, x1, y1) {
    ============================================================= */
 
 const CTRL = {
-  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], attack: ['Space'], dash: ['ShiftLeft'], ult: ['KeyQ'] },
-  p2: { up: ['KeyI'], down: ['KeyK'], left: ['KeyJ'], right: ['KeyL'], attack: ['Numpad0', 'Period', 'Slash'], dash: ['ShiftRight'], ult: ['Comma', 'Numpad2'] }
+  p1: { up: ['KeyW'], down: ['KeyS'], left: ['KeyA'], right: ['KeyD'], attack: ['Space'], dash: ['ShiftLeft'], ult: ['KeyQ'], spec: ['KeyE'] },
+  p2: { up: ['KeyI'], down: ['KeyK'], left: ['KeyJ'], right: ['KeyL'], attack: ['Numpad0', 'Period', 'Slash'], dash: ['ShiftRight'], ult: ['Comma', 'Numpad2'], spec: ['Numpad3', 'Semicolon'] }
 };
 
 function makePlayerData(key, index) {
@@ -656,6 +665,7 @@ function makePlayerData(key, index) {
     level: 1, xp: 0, xpNext: 34,
     atkCd: 0, iframes: 0, aim: 0, moving: false, swing: 0, attackAnim: 0,
     taken: {}, dashCd: 0, dashT: 0, dashDirX: 0, dashDirY: 0,
+    spCd: 0, spCdMax: 6, spT: 0, specLatch: false, whirl: 0, whirlTick: 0,
     ult: 0, ultMax: 100, ultActive: 0, regenAcc: 0,
     isMelee: c.weapon === 'melee',
     st: {
@@ -702,6 +712,7 @@ function startGame(opts) {
   G.hintT = 11;
 
   enemies = []; projs = []; eprojs = []; items = []; flyers = [];
+  hazards = []; timers = [];
   FX.clearAll();
 
   buildWorld((Math.random() * 1e9) | 0);
@@ -887,6 +898,19 @@ function updatePlayer(p, dt, useMouse) {
   if (p.dashLatch) { /* ждём отпускания */ }
   if (anyKey(ctrl.dash) && !p.dashLatch && p.dashCd <= 0) doDash(p, mx, my);
   if (anyKey(ctrl.ult) && !p.ultLatch && p.ult >= p.ultMax) doUltimate(p);
+  if (anyKey(ctrl.spec) && !p.specLatch && p.spCd <= 0) doSpecial(p);
+
+  if (p.spCd > 0) p.spCd -= dt;
+  if (p.spT > 0) p.spT -= dt;
+  if (p.whirl > 0) {
+    p.whirl -= dt;
+    p.whirlTick = (p.whirlTick || 0) + dt;
+    if (p.whirlTick > 0.22) {
+      p.whirlTick = 0;
+      FX.ring(p.x, p.y, '#fb923c', 8, 46, 0.25, 2);
+      hitAllInRange(p, 46, (CHARACTERS[p.charKey].spDmg || 60) * p.st.dmg * 0.3 * curseDmgMult(), 4);
+    }
+  }
 
   const atkPressed = useMouse ? mouse.down : anyKey(ctrl.attack);
   if (atkPressed && p.atkCd <= 0 && p.dashT <= 0) playerAttack(p);
@@ -917,6 +941,151 @@ function doDash(p, mx, my) {
   FX.spawn(p.x, p.y, 10, { color: c.ultColor, speed: 90, life: 0.35, size: 2, light: 0.6 });
   FX.ring(p.x, p.y, c.ultColor, 4, 20, 0.25);
   Sfx.dash();
+}
+
+/* =============================================================
+   СПЕЦИАЛЬНАЯ АТАКА ГЕРОЯ (клавиша E)
+   У каждого героя своя уникальная атака с анимацией.
+   ============================================================= */
+
+function doSpecial(p) {
+  const c = CHARACTERS[p.charKey];
+  if (p.spCd > 0) return;
+  p.spCd = c.spCd;
+  p.spT = 0.55;                       /* длительность анимации */
+  p.spCdMax = c.spCd;
+  const dmg = (c.spDmg || 60) * p.st.dmg * curseDmgMult() * p.st.ultMul;
+  const aim = p.aim;
+  Sfx.ultimate();
+  FX.flash(0.16, c.spColor);
+
+  if (p.charKey === 'knight') {
+    /* РАСКОЛ: удар о землю, трещины и ударная волна */
+    FX.decal(p.x, p.y + 4, '#3a2a18', 16, 8);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      FX.beam(p.x, p.y, a, 60 + i * 6, '#ffd166', 0.3, 2);
+    }
+    FX.ring(p.x, p.y, '#ffd166', 6, 78, 0.36, 4);
+    FX.ring(p.x, p.y, '#ffffff', 4, 46, 0.22, 2);
+    FX.spawn(p.x, p.y, 26, { color: '#d4a72c', speed: 150, life: 0.5, g: 180, size: 2, light: 0.5 });
+    FX.shake(6);
+    hitAllInRange(p, 74, dmg, 10);
+  } else if (p.charKey === 'archer') {
+    /* ВЕЕРНЫЙ ЗАЛП: семь стрел веером */
+    for (let i = 0; i < 7; i++) {
+      const a = aim + (i - 3) * 0.14;
+      pushProj(p, p.x, p.y - 4, a, 330 * p.st.projSpeed, dmg, 'arrowP', 'arrow', 2, 1);
+    }
+    FX.spawn(p.x + Math.cos(aim) * 6, p.y - 4, 8, { color: '#86efac', speed: 90, life: 0.25, ang: aim, spread: 0.8, light: 0.5 });
+    FX.ring(p.x, p.y, '#86efac', 5, 26, 0.2, 2);
+    Sfx.shoot('arrow');
+  } else if (p.charKey === 'rogue') {
+    /* ТЕНЕВОЙ РЫНОК: прыжок к ближайшему врагу с взрывом */
+    let near = null, nd = 1e9;
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.dead) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d < nd) { nd = d; near = e; }
+    }
+    const tx = near ? near.x : p.x + Math.cos(aim) * 70;
+    const ty = near ? near.y : p.y + Math.sin(aim) * 70;
+    for (let i = 0; i < 5; i++) {
+      FX.spawn(p.x, p.y, 1, { color: '#a78bfa', speed: 40, life: 0.3, light: 0.6 });
+    }
+    p.x = tx; p.y = ty;
+    p.iframes = Math.max(p.iframes, 0.3);
+    FX.ring(p.x, p.y, '#a78bfa', 4, 34, 0.3, 3);
+    FX.spawn(p.x, p.y, 20, { color: '#c4b5fd', speed: 130, life: 0.4, light: 0.7 });
+    FX.shake(4);
+    hitAllInRange(p, 40, dmg, 8);
+  } else if (p.charKey === 'barbarian') {
+    /* ВИХРЬ ТОПОРА: вращение несколько тиков */
+    p.whirl = 0.9;
+    FX.ring(p.x, p.y, '#fb923c', 10, 58, 0.45, 4);
+    for (let i = 0; i < 3; i++) {
+      setTimeoutSafe(function () {
+        if (!player) return;
+        const ps = activePlayers();
+        const who = ps.indexOf(p) >= 0 ? p : ps[0];
+        FX.ring(who.x, who.y, '#fb923c', 8, 52, 0.3, 3);
+        hitAllInRange(who, 50, dmg * 0.45, 4);
+      }, i * 220);
+    }
+    FX.shake(3);
+  } else if (p.charKey === 'gunner') {
+    /* РЕЛЬСОТРОН: узкий мощный луч насквозь */
+    FX.beam(p.x, p.y - 4, aim, 175, '#93c5fd', 0.42, 7);
+    FX.beam(p.x, p.y - 4, aim, 175, '#ffffff', 0.3, 2);
+    FX.spawn(p.x, p.y, 18, { color: '#bfdbfe', speed: 60, life: 0.4, ang: aim, spread: 0.5, light: 0.8 });
+    FX.shake(7);
+    FX.stop(0.05);
+    /* бьём всех на линии */
+    const list = enemies.slice();
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i];
+      if (e.dead) continue;
+      const dx = e.x - p.x, dy = e.y - p.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > 175) continue;
+      if (Math.abs(angleDiff(Math.atan2(dy, dx), aim)) < 0.12) {
+        hitEnemy(p, e, dmg, aim, 6, true);
+      }
+    }
+  } else if (p.charKey === 'spearman') {
+    /* ВЫНОС: стремительный вынос, пробивает всех на линии */
+    for (let i = 0; i < 3; i++) {
+      pushProj(p, p.x, p.y - 4, aim + (i - 1) * 0.05, 460, dmg * 0.6, 'spearShot', 'spear', 6, 2);
+    }
+    /* мгновенный урон по линии — не даёт промахнуться */
+    const list = enemies.slice();
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i];
+      if (e.dead) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d > 120) continue;
+      if (Math.abs(angleDiff(Math.atan2(e.y - p.y, e.x - p.x), aim)) < 0.45) {
+        hitEnemy(p, e, dmg * 0.5, aim, 8, true);
+      }
+    }
+    FX.beam(p.x, p.y - 4, aim, 120, '#5eead4', 0.32, 7);
+    FX.beam(p.x, p.y - 4, aim, 120, '#ffffff', 0.22, 2);
+    p.dashDirX = Math.cos(aim); p.dashDirY = Math.sin(aim);
+    p.dashT = 0.22;
+    p.iframes = Math.max(p.iframes, 0.3);
+    FX.shake(5);
+  } else if (p.charKey === 'reaper') {
+    /* СБОР УРОЖАЯ: спираль душ, лечит за убийства */
+    for (let i = 0; i < 8; i++) {
+      flyers.push({ a: (i / 8) * Math.PI * 2, r: 30, spin: 1.6, dmg: dmg * 0.5, t: 2.4, hit: {}, owner: p, heal: 6 });
+    }
+    FX.ring(p.x, p.y, '#22d3ee', 8, 70, 0.45, 3);
+    Sfx.levelUp();
+  } else if (p.charKey === 'pyromant') {
+    /* ОГНЕННАЯ СТЕНА: линия взрывов */
+    for (let i = 1; i <= 6; i++) {
+      const x = p.x + Math.cos(aim) * i * 26;
+      const y = p.y + Math.sin(aim) * i * 26;
+      addHazard(x, y, 22, '#f97316', 14, 3.2, true);
+      FX.ring(x, y, '#fb923c', 2, 26, 0.35);
+      FX.spawn(x, y, 8, { color: '#f97316', speed: 70, life: 0.5, g: -20, light: 0.7 });
+      /* мгновенный урон в точке взрыва */
+      hitAllInRangeAt(p, x, y, 24, dmg * 0.45, 4);
+    }
+    FX.shake(4);
+  }
+  updateHud();
+}
+
+/* простой отложенный вызов без внешних зависимостей */
+let timers = [];
+function setTimeoutSafe(fn, ms) { timers.push({ fn: fn, t: ms / 1000 }); }
+function runTimers(dt) {
+  for (let i = timers.length - 1; i >= 0; i--) {
+    timers[i].t -= dt;
+    if (timers[i].t <= 0) { const f = timers[i].fn; timers.splice(i, 1); f(); }
+  }
 }
 
 function doUltimate(p) {
@@ -996,12 +1165,16 @@ function doUltimate(p) {
 }
 
 function hitAllInRange(p, rad, dmg, knock) {
+  hitAllInRangeAt(p, p.x, p.y, rad, dmg, knock);
+}
+
+function hitAllInRangeAt(p, cx, cy, rad, dmg, knock) {
   const list = enemies.slice();
   for (let i = 0; i < list.length; i++) {
     const e = list[i];
     if (e.dead) continue;
-    if (Math.hypot(e.x - p.x, e.y - p.y) < rad) {
-      hitEnemy(p, e, dmg, Math.atan2(e.y - p.y, e.x - p.x), knock, true);
+    if (Math.hypot(e.x - cx, e.y - cy) < rad) {
+      hitEnemy(p, e, dmg, Math.atan2(e.y - cy, e.x - cx), knock, true);
     }
   }
 }
@@ -1397,6 +1570,12 @@ function updateBoss(e, dt) {
       FX.spawn(e.x, e.y, 26, { color: '#f59e0b', speed: 190, life: 0.6, g: 40, light: 0.7 });
       FX.shake(7);
       Sfx.boss();
+      /* огненные лужи по земле */
+      for (let i = 0; i < 5; i++) {
+        const a = rnd(0, Math.PI * 2), dd = rnd(30, 140);
+        addHazard(clamp(t.x + Math.cos(a) * dd, TILE, WORLD_W - TILE),
+                  clamp(t.y + Math.sin(a) * dd, TILE, WORLD_H - TILE), 20, '#f97316', 16, 4.5);
+      }
       if (d < 150) damagePlayer(t, e.dmg * 0.6);
     }
   }
@@ -1454,6 +1633,69 @@ function updateBoss(e, dt) {
   }
 }
 
+/* ---------------- Опасные зоны (огонь, яд) ---------------- */
+
+function addHazard(x, y, r, color, dmg, life, hurtEnemies) {
+  if (hazards.length > 40) hazards.shift();
+  if (solidAt(x, y)) return;
+  hazards.push({ x: x, y: y, r: r, color: color, dmg: dmg, t: 0, life: life, tick: 0, hurt: !!hurtEnemies, atk: 0 });
+}
+
+function updateHazards(dt) {
+  const ps = activePlayers();
+  for (let i = hazards.length - 1; i >= 0; i--) {
+    const h = hazards[i];
+    h.t += dt;
+    if (h.t >= h.life) { hazards.splice(i, 1); continue; }
+    h.tick -= dt;
+    if (h.tick <= 0) {
+      h.tick = 0.4;
+      FX.spawn(h.x + rnd(-h.r, h.r), h.y + rnd(-4, 4), 1, {
+        color: h.color, speed: 14, life: 0.5, g: -26, light: 0.5
+      });
+    }
+    /* лужи жгут героев... */
+    for (let k = 0; k < ps.length; k++) {
+      if (!ps[k]) continue;
+      if (Math.hypot(ps[k].x - h.x, ps[k].y - h.y) < h.r) damagePlayer(ps[k], h.dmg * dt);
+    }
+    /* ...а «свои» огни (огненная стена пироманта) — ещё и врагов */
+    if (h.hurt) {
+      h.atk = (h.atk || 0) + dt;
+      if (h.atk > 0.3) {
+        h.atk = 0;
+        const owner = player;
+        const list = enemies.slice();
+        for (let j = 0; j < list.length; j++) {
+          const e = list[j];
+          if (e.dead) continue;
+          if (Math.hypot(e.x - h.x, e.y - h.y) < h.r) {
+            hitEnemy(owner, e, h.dmg * 0.3, 0, 0, false);
+          }
+        }
+      }
+    }
+  }
+}
+
+function drawHazards(g) {
+  for (let i = 0; i < hazards.length; i++) {
+    const h = hazards[i];
+    const k = h.t / h.life;
+    const r = h.r * (0.75 + 0.25 * Math.min(1, k * 6)) * (1 - k * 0.25);
+    g.globalAlpha = 0.3 * (1 - k);
+    g.fillStyle = h.color;
+    g.beginPath();
+    g.ellipse(h.x, h.y, r, r * 0.55, 0, 0, Math.PI * 2);
+    g.fill();
+    g.globalAlpha = 0.55 * (1 - k);
+    g.strokeStyle = '#ffe27a';
+    g.lineWidth = 1;
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+}
+
 /* =============================================================
    БОЙ
    ============================================================= */
@@ -1468,6 +1710,7 @@ function hitEnemy(src, e, dmg, ang, knock, canCrit) {
   const dealt = Math.max(1, dmg);
   e.hp -= dealt;
   e.hurt = 0.12;
+  G.totalDmg = (G.totalDmg || 0) + dealt;
 
   FX.hit(e.x, e.y - 4, ang, crit ? '#ffd166' : '#fff2c0', crit ? 1.6 : 0.8);
   FX.text(e.x + rnd(-3, 3), e.y - e.r - 7, Math.round(dealt), crit ? '#ff9f43' : '#ffffff', crit ? 9 : 7);
@@ -2192,12 +2435,14 @@ function update(dt) {
 
   const ps = activePlayers();
   for (let i = 0; i < ps.length; i++) {
-    /* сброс «залипающих» рывка/ульты требует отпускания клавиши */
+    /* сброс «залипающих» рывка/ульты/спецатаки требует отпускания клавиши */
     const ctrl = ps[i].ctrl;
     if (!anyKey(ctrl.dash)) ps[i].dashLatch = false;
     if (!anyKey(ctrl.ult)) ps[i].ultLatch = false;
+    if (!anyKey(ctrl.spec)) ps[i].specLatch = false;
     updatePlayer(ps[i], dt, ps[i].index === 0);
   }
+  runTimers(dt);
 
   updateWaves(dt);
 
@@ -2216,6 +2461,7 @@ function update(dt) {
   updateProjs(dt);
   updateEprojs(dt);
   updateFlyers(dt);
+  updateHazards(dt);
   updateItems(dt);
 
   FX.update(dt);
@@ -2305,6 +2551,9 @@ function render() {
 
   /* следы на земле */
   FX.drawDecals(ctx);
+
+  /* опасные зоны */
+  drawHazards(ctx);
 
   /* факелы */
   drawTorches();
@@ -2448,18 +2697,40 @@ function drawHero(p) {
   if (inv) ctx.globalAlpha = (Math.floor(G.time * 20) % 2 === 0) ? 0.45 : 0.75;
   const pos = drawSpriteAt(sp, p.x, p.y + 3, Math.cos(p.aim) < 0, 0);
 
-  /* оружие в стороне прицела */
+  /* оружие в стороне прицела (со спец-анимацией) */
   const wsp = Sprites[c.overlay];
   if (wsp) {
     const lunge = p.swing > 0 ? 4 : 0;
-    const rot = p.aim - Math.PI / 2;
+    let rot = p.aim - Math.PI / 2;
+    let wob = p.swing > 0 ? Math.sin((0.18 - p.swing) / 0.18 * Math.PI) * 0.7 : 0;
+    let sc = 1;
+    let lift = 3;
+    if (p.whirl > 0) { rot = G.time * 22; wob = 0; lift = 0; sc = 1.15; }
+    else if (p.spT > 0) {
+      const k = 1 - p.spT / 0.55;
+      /* резкий замах назад и удар вперёд */
+      rot = p.aim - Math.PI / 2 + Math.sin(k * Math.PI * 2) * 1.5;
+      lift = 3 + Math.sin(k * Math.PI) * 5;
+      sc = 1 + Math.sin(k * Math.PI) * 0.35;
+    }
     ctx.save();
-    ctx.translate(Math.round(p.x + Math.cos(p.aim) * 3), Math.round(p.y - 5 + Math.sin(p.aim) * 3));
+    ctx.translate(Math.round(p.x + Math.cos(p.aim) * lift), Math.round(p.y - 5 + Math.sin(p.aim) * lift));
     ctx.rotate(rot);
-    const wob = p.swing > 0 ? Math.sin((0.18 - p.swing) / 0.18 * Math.PI) * 0.7 : 0;
     ctx.rotate(wob);
+    ctx.scale(sc, sc);
     ctx.drawImage(wsp, -2 + lunge, -Math.round(wsp.height / 2));
     ctx.restore();
+  }
+
+  /* подсветка специальной атаки */
+  if (p.spT > 0) {
+    ctx.globalAlpha = 0.35 + Math.sin(G.time * 40) * 0.2;
+    ctx.strokeStyle = c.spColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y - 3, 18, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   ctx.globalAlpha = 1;
@@ -2700,6 +2971,14 @@ function updateHud() {
     ultEl.style.width = (clamp(p.ult / p.ultMax, 0, 1) * 100).toFixed(1) + '%';
     ultEl.style.background = p.ult >= p.ultMax ? 'linear-gradient(#f0abfc,#a855f7)' : 'linear-gradient(#c4b5fd,#6d28d9)';
     dashEl.classList.toggle('ready', p.dashCd <= 0);
+
+    const spEl = i === 0 ? els.spPip : els.spPip2;
+    if (spEl) {
+      const max = p.spCdMax || CHARACTERS[p.charKey].spCd || 6;
+      spEl.classList.toggle('ready', p.spCd <= 0);
+      spEl.textContent = '⚡';
+      spEl.style.opacity = p.spCd > 0 ? (0.35 + 0.65 * (1 - p.spCd / max)).toFixed(2) : 1;
+    }
   }
 
   const left = enemies.length + G.spawnQueue.length;
@@ -2767,7 +3046,7 @@ function buildCharCards() {
 
     const ds = document.createElement('div');
     ds.className = 'char-desc';
-    ds.textContent = c.desc + ' · ' + c.ultName;
+    ds.textContent = '⚡ ' + c.spName + ' · ✦ ' + c.ultName;
     card.appendChild(ds);
 
     const bars = document.createElement('div');
@@ -2914,7 +3193,7 @@ function toCanvasCoords(ev) {
   };
 }
 
-const HOLD_KEYS = ['Space', 'ShiftLeft', 'ShiftRight', 'KeyQ', 'KeyE', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'Period', 'Slash', 'Comma', 'Numpad0', 'Numpad2'];
+const HOLD_KEYS = ['Space', 'ShiftLeft', 'ShiftRight', 'KeyQ', 'KeyE', 'KeyI', 'KeyJ', 'KeyK', 'KeyL', 'Period', 'Slash', 'Comma', 'Semicolon', 'Numpad0', 'Numpad2', 'Numpad3'];
 
 function bindInput() {
   window.addEventListener('keydown', function (e) {
@@ -3101,7 +3380,7 @@ function boot() {
     heroName: 'heroName', heroName2: 'heroName2', heroLevel: 'heroLevel', heroLevel2: 'heroLevel2',
     hpFill: 'hpFill', hpText: 'hpText', hpFill2: 'hpFill2', hpText2: 'hpText2',
     xpFill: 'xpFill', xpFill2: 'xpFill2', ultFill: 'ultFill', ultFill2: 'ultFill2',
-    dashPip: 'dashPip', dashPip2: 'dashPip2',
+    dashPip: 'dashPip', dashPip2: 'dashPip2', spPip: 'spPip', spPip2: 'spPip2',
     p1wrap: 'p1wrap', p2wrap: 'p2wrap',
     waveText: 'waveText', leftText: 'leftText', scoreText: 'scoreText',
     coinText: 'coinText', timeText: 'timeText',
