@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>PixelWaves — Лунный лес</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="320" height="180"></canvas>
+
+  <!-- ================= HUD ================= -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div id="p1wrap" class="pwrap">
+        <div class="pport">
+          <canvas id="portrait" width="16" height="16"></canvas>
+          <span id="heroLevel" class="plvl">1</span>
+        </div>
+        <div class="pbars">
+          <div class="prow"><span id="heroName">РЫЦАРЬ</span><span id="hpText">150/150</span></div>
+          <div class="bar hp"><i id="hpFill"></i></div>
+          <div class="bar xp"><i id="xpFill"></i></div>
+          <div class="bar ult"><i id="ultFill"></i></div>
+          <div class="ab-row"><span class="ab" id="dashPip" title="Рывок">⇢</span><span class="ab">Q — ульта</span></div>
+        </div>
+      </div>
+
+      <div id="p2wrap" class="pwrap hidden">
+        <div class="pport">
+          <canvas id="portrait2" width="16" height="16"></canvas>
+          <span id="heroLevel2" class="plvl">1</span>
+        </div>
+        <div class="pbars">
+          <div class="prow"><span id="heroName2">ЛУЧОК</span><span id="hpText2">88/88</span></div>
+          <div class="bar hp"><i id="hpFill2"></i></div>
+          <div class="bar xp"><i id="xpFill2"></i></div>
+          <div class="bar ult"><i id="ultFill2"></i></div>
+          <div class="ab-row"><span class="ab" id="dashPip2" title="Рывок">⇢</span><span class="ab">IJKL · , — ульта</span></div>
+        </div>
+      </div>
+
+      <div id="hud-right">
+        <div id="waveText">ВОЛНА 1 / 30</div>
+        <div id="leftText">врагов: 0</div>
+        <div class="score-row"><span id="scoreText">0</span><span id="coinText">0</span><span id="timeText">0:00</span></div>
+        <div id="combo" class="hidden">×0</div>
+      </div>
+    </div>
+
+    <div id="bossWrap" class="hidden">
+      <div id="bossName"></div>
+      <div class="bar boss"><i id="bossFill"></i></div>
+    </div>
+
+    <div id="curse" class="hidden"></div>
+    <div id="hint">WASD — движение · ЛКМ/Пробел — атака · ЛShift — рывок · Q — ульта · P — пауза · M/N — звук</div>
+  </div>
+
+  <div id="banner" class="hidden"></div>
+
+  <!-- ================= МЕНЮ ================= -->
+  <div id="menu" class="screen scroll">
+    <header class="menu-head">
+      <h1>PIXEL<span>WAVES</span></h1>
+      <p class="sub">ЛУННЫЙ ЛЕС · 30 ВОЛН · 6 БОССОВ · 4 ЛОКАЦИИ · 1–2 ИГРОКА</p>
+      <div class="topbtns">
+        <button id="soundBtn" class="tiny">Звук: вкл</button>
+        <button id="musicBtn" class="tiny">Музыка: вкл</button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-title">РЕЖИМ</div>
+      <div class="mode-row">
+        <button id="mode1" class="mode sel">⚔ 1 ИГРОК</button>
+        <button id="mode2" class="mode">⚔⚔ 2 ИГРОКА</button>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="p2section">
+      <div class="panel-title">ВТОРОЙ ГЕРОЙ <span class="hinty">(P2: IJKL · Numpad0/ЛКМ · RShift · , )</span></div>
+      <div id="charList2" class="chars small"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">ГЕРОЙ</div>
+      <div id="charList" class="chars"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">ЛОКАЦИЯ</div>
+      <div id="locList" class="locs"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">СЛОЖНОСТЬ</div>
+      <div id="diffList" class="diffs"></div>
+    </section>
+
+    <button id="startBtn" class="big">В БОЙ ▶</button>
+    <p id="metaText" class="meta"></p>
+    <p class="foot">Работает офлайн · без установки · можно играть вдвоём на одной клавиатуре</p>
+  </div>
+
+  <!-- ================= УЛУЧШЕНИЯ ================= -->
+  <div id="upgradeScreen" class="screen hidden">
+    <h2 id="upgradeTitle">ВЫБЕРИ УЛУЧШЕНИЕ</h2>
+    <div id="upgradeList" class="upcards"></div>
+    <p id="upgradeSub" class="sub">Кликни по карточке или нажми 1 / 2 / 3</p>
+  </div>
+
+  <!-- ================= ЛАВКА ================= -->
+  <div id="shop" class="screen hidden">
+    <h2>ЛАВКА СТЕРАЖА</h2>
+    <p class="sub">Монеты: <span id="shopCoins" class="coins">0</span> ◎</p>
+    <div id="shopList" class="upcards"></div>
+    <button id="shopCloseBtn" class="big">ДАЛЬШЕ (Пробел) ▶</button>
+  </div>
+
+  <!-- ================= ПАУЗА ================= -->
+  <div id="pauseScreen" class="screen hidden">
+    <h2>ПАУЗА</h2>
+    <p class="sub">P или Esc — продолжить</p>
+    <button id="menuBtn" class="small">В МЕНЮ</button>
+  </div>
+
+  <!-- ================= ФИНАЛ ================= -->
+  <div id="endScreen" class="screen hidden">
+    <h2 id="endTitle">ПОРАЖЕНИЕ</h2>
+    <p id="endText"></p>
+    <button id="againBtn" class="big">ЕЩЁ РАЗ</button>
+  </div>
+</div>
+
+<script src="js/audio.js"></script>
+<script src="js/sprites.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
